@@ -17,12 +17,16 @@ variable "instance_type" {
   #default = "t2_micro"
 }
 
+variable "ami" {
+  type = string
+}
+
 locals {
   project_name = "MyServer"
 }
 
 resource "aws_instance" "my_server" {
-  ami           = "ami-09d3b3274b6c5d4aa"
+  ami           = var.ami
   instance_type = var.instance_type
 
   tags = {
