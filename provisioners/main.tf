@@ -1,11 +1,11 @@
 terraform {
-  backend "remote" {
-    organization = "paultrig"
+  # backend "remote" {
+  #   organization = "paultrig"
 
-    workspaces {
-      name = "provisioners"
-    }
-  }
+  #   workspaces {
+  #     name = "provisioners"
+  #   }
+  # }
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -52,7 +52,7 @@ resource "aws_security_group" "sg_my_server" {
       from_port        = 22
       to_port          = 22
       protocol         = "tcp"
-      cidr_blocks      = ["102.134.113.1/32"]
+      cidr_blocks      = ["102.134.113.10/32"]
       ipv6_cidr_blocks = []
       prefix_list_ids  = []
       security_groups  = []
@@ -92,10 +92,38 @@ resource "aws_instance" "my_server" {
   key_name               = aws_key_pair.deployer.key_name
   vpc_security_group_ids = [aws_security_group.sg_my_server.id]
   user_data              = data.template_file.user_data.rendered
+  # provisioner "local-exec" {
+  #   command = "echo ${self.private_ip} >> private_ips.txt"
+  # }
+  provisioner "remote-exec" {
+    inline = [
+      "echo ${self.private_ip} >> /home/ec2-user/private_ips.txt",
+    ]
+    connection { 
+      type     = "ssh"
+      user     = "ec2-user"
+      host     = "${self.public_ip}"
+      private_key = "${file("/Users/ajakayepaul/.ssh/terraform")}"
+
+    }
+  }
+  provisioner "file" {
+    content      = "Hello World"
+    destination = "/home/ec2-user/hello.txt"
+    connection { 
+      type     = "ssh"
+      user     = "ec2-user"
+      host     = "${self.public_ip}"
+      private_key = "${file("/Users/ajakayepaul/.ssh/terraform")}"
+
+    }
+  }
+
   tags = {
     Name = "MyServer"
   }
 }
+
 output "public_ip" {
   value = aws_instance.my_server.public_ip
 }
